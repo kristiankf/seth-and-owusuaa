@@ -28,12 +28,20 @@ const title = `${wedding.couple.combined} | Wedding Invitation`;
 const description = `Join ${wedding.couple.groom} and ${wedding.couple.bride} as they celebrate their wedding on ${wedding.ceremony.dateDisplay}.`;
 
 /**
- * Vercel exposes the deployment host automatically, so sharing previews
- * resolve correctly without configuring an environment variable.
+ * The URL guests actually receive. Do not use
+ * `VERCEL_PROJECT_PRODUCTION_URL`: Vercel can set that to an internal
+ * hostname (this project was emitting `ug-fleet-79s3.vercel.app`) that
+ * 404s, so WhatsApp fetches a dead `og:image`.
  */
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "http://localhost:3000";
+const PRODUCTION_SITE_URL = "https://sethandowusuaa.vercel.app";
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_ENV === "production"
+    ? PRODUCTION_SITE_URL
+    : process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
 
 /** Generated from the hero photograph by `npm run images`. */
 const socialCard = {
@@ -41,6 +49,7 @@ const socialCard = {
   width: 1200,
   height: 630,
   alt: `${wedding.couple.combined} — ${wedding.ceremony.dateDisplay}`,
+  type: "image/jpeg",
 };
 
 export const metadata: Metadata = {
@@ -53,6 +62,7 @@ export const metadata: Metadata = {
     title,
     description,
     type: "website",
+    url: "/",
     siteName: title,
     locale: "en_GB",
     images: [socialCard],

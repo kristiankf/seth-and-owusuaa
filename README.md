@@ -52,7 +52,7 @@ npm start
 
 1. Push this repository to GitHub, GitLab, or Bitbucket — or import the folder with the Vercel CLI (`npx vercel`).
 2. Create a new Vercel project and point it at the repository. Vercel detects Next.js automatically.
-3. Leave Environment Variables empty. The site reads `VERCEL_PROJECT_PRODUCTION_URL` (set by Vercel) only to build absolute Open Graph URLs; it does not need a secret or a custom variable.
+3. Leave Environment Variables empty. Production Open Graph URLs are built from `https://sethandowusuaa.vercel.app` so WhatsApp can fetch `/og.jpg`. Override with `NEXT_PUBLIC_SITE_URL` only if the public host changes.
 4. Deploy. The production URL is the invitation guests should receive.
 
 Do not add analytics, third-party trackers, or a backend. If a custom domain is attached later, Vercel continues to supply the production host.

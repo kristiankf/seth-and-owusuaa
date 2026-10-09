@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens                                                       */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  /* Palette, drawn from the printed invitation artwork. */
+  --color-burgundy: #57091d;
+  --color-wine: #3b0715;
+  --color-ivory: #f8f2ec;
+  --color-gold: #c6a16b;
+  --color-rose: #c49a9d;
+  --color-cocoa: #79513f;
+  --color-charcoal: #211a1a;
+
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-great-vibes), var(--font-cormorant), cursive;
+
+  /* Fluid editorial type scale. Every step is capped so long names such as
+     "God's Dream Church International" never force horizontal overflow. */
+  --text-label: clamp(0.625rem, 0.58rem + 0.2vw, 0.75rem);
+  --text-label--line-height: 1.5;
+  --text-body: clamp(0.9375rem, 0.9rem + 0.25vw, 1.0625rem);
+  --text-body--line-height: 1.7;
+  --text-lead: clamp(1.0625rem, 1rem + 0.5vw, 1.25rem);
+  --text-lead--line-height: 1.65;
+  --text-title: clamp(1.75rem, 1.35rem + 2vw, 3rem);
+  --text-title--line-height: 1.15;
+  --text-display: clamp(2.5rem, 1.6rem + 5.2vw, 5.5rem);
+  --text-display--line-height: 1.05;
+
+  --tracking-label: 0.22em;
+  --tracking-wordmark: 0.08em;
+
+  /* Section rhythm. Generous on desktop, still breathable on a small phone. */
+  --spacing-section: clamp(4.5rem, 3rem + 7vw, 9rem);
+
+  --ease-editorial: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                               */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Full-bleed invitation height that tolerates mobile browser chrome. */
+    --viewport-h: 100svh;
+  }
+
+  @supports not (height: 100svh) {
+    :root {
+      --viewport-h: 100vh;
+    }
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* The fixed scroll indicator is thin, but anchored sections should still
+       clear the notch area on hash navigation. */
+    scroll-padding-top: 2rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-ivory);
+    color: var(--color-charcoal);
+    font-family: var(--font-sans);
+    /* Prevents decorative ornaments from ever creating a horizontal scrollbar. */
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-gold) 40%, transparent);
+    color: var(--color-charcoal);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Dark sections need a focus ring that reads against burgundy. */
+  .on-dark :focus-visible {
+    outline-color: var(--color-ivory);
+  }
+
+  img {
+    /* Guards against any single image breaking the narrow-viewport layout. */
+    max-width: 100%;
+  }
+
+  /*
+   * While the cover is up, the in-place hero photograph is hidden so the
+   * flying copy is the only one on screen. Applied from JS; without JS the
+   * class is never set and the hero stays visible below the cover.
+   */
+  html.invitation-awaiting #hero-portrait > * {
+    visibility: hidden;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Components: typography and ornament                                */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  .label-eyebrow {
+    font-family: var(--font-sans);
+    font-size: var(--text-label);
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  /* Cormorant Garamond defaults to old-style figures, which make "10 October
+     2026" read as "1o" and give numbered lists uneven heights. */
+  .font-display,
+  .wordmark {
+    font-variant-numeric: lining-nums;
+  }
+
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 300;
+    letter-spacing: var(--tracking-wordmark);
+    /* Keeps "Seth & Owusuaa" on one line as long as it fits, then breaks
+       cleanly at the ampersand rather than mid-name. */
+    text-wrap: balance;
+  }
+
+  /* A fine double rule, echoing the border of the printed invitation. */
+  .rule-gold {
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in srgb, var(--color-gold) 85%, transparent) 20%,
+      color-mix(in srgb, var(--color-gold) 85%, transparent) 80%,
+      transparent
+    );
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                          */
+/* ------------------------------------------------------------------ */
+
+@utility screen-h {
+  min-height: var(--viewport-h);
+}
+
+@utility pad-safe-x {
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
+
+@utility pad-safe-b {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* ------------------------------------------------------------------ */
+/* Envelope geometry                                                  */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The envelope is built from real elements so it stays crisp and responsive.
+ * The flap and body are triangles cut with clip-path; only transforms and
+ * opacity are animated, so the whole sequence stays on the compositor.
+ */
+/* The flap is the lightest plane, catching the most light. */
+.envelope-flap {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background-image: linear-gradient(to bottom, #711630 0%, #5a0a1f 62%, #4a0818 100%);
+}
+
+/* The pocket front sits in shadow, which separates it from the flap above. */
+.envelope-pocket {
+  background-image: linear-gradient(to bottom, #420814 0%, #330610 55%, #2a050d 100%);
+}
+
+/* Deepest plane, glimpsed through the open flap behind the rising card. */
+.envelope-lining {
+  background-image: linear-gradient(to bottom, #1d0309, #2a050d);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                     */
+/* ------------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

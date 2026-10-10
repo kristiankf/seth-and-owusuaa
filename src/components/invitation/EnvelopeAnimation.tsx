@@ -1,9 +1,9 @@
 "use client";
 
-import type { Ref } from "react";
+import type { ReactNode, Ref } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
-import { envelopeVariants } from "@/lib/animations";
+import { ENVELOPE_TIMINGS, EASE_ENVELOPE, envelopeVariants } from "@/lib/animations";
 import { FloralOrnament } from "@/components/ui/FloralOrnament";
 import type { InvitationPhase } from "@/components/invitation/invitation-context";
 import { getImage } from "@/data/generated/images";
@@ -12,8 +12,88 @@ import { wedding } from "@/data/wedding";
 interface EnvelopeAnimationProps {
   readonly reduced: boolean;
   readonly phase: InvitationPhase;
+  /** After the peek, the pocket parts down the middle for the hold. */
+  readonly bookOpen: boolean;
   readonly cardRef?: Ref<HTMLDivElement>;
   readonly onPeekComplete?: () => void;
+}
+
+const POCKET_CLIP = "polygon(0 100%, 0 2%, 50% 16%, 100% 2%, 100% 100%)";
+
+/**
+ * One half of the pocket. The artwork is the full envelope, clipped to this
+ * half, then the half turns on the center spine.
+ */
+function BookLeaf({
+  side,
+  open,
+  reduced,
+  children,
+}: {
+  readonly side: "left" | "right";
+  readonly open: boolean;
+  readonly reduced: boolean;
+  readonly children: ReactNode;
+}) {
+  const variants = envelopeVariants(reduced);
+  const isLeft = side === "left";
+
+  return (
+    <motion.div
+      initial="closed"
+      animate={open ? "open" : "closed"}
+      variants={isLeft ? variants.leafLeft : variants.leafRight}
+      className={`absolute inset-y-0 w-1/2 ${isLeft ? "left-0 origin-right" : "right-0 origin-left"}`}
+      style={{ transformStyle: "preserve-3d" }}
+    >
+      <div className="absolute inset-0 overflow-hidden" style={{ backfaceVisibility: "hidden" }}>
+        <div className={`absolute inset-y-0 w-[200%] ${isLeft ? "left-0" : "right-0"}`}>
+          {children}
+        </div>
+      </div>
+      <div
+        aria-hidden="true"
+        className="envelope-lining absolute inset-0"
+        style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+      />
+    </motion.div>
+  );
+}
+
+function PocketFace() {
+  return (
+    <>
+      <div
+        className="envelope-pocket absolute inset-0 rounded-[3px]"
+        style={{ clipPath: POCKET_CLIP }}
+      >
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          className="absolute inset-0 size-full text-gold/45"
+        >
+          <path
+            d="M0 2 50 16 100 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+
+        <div className="absolute inset-x-0 bottom-[8%] flex flex-col items-center gap-2.5">
+          <FloralOrnament variant="crest" className="w-24 text-gold/40" />
+          <span aria-hidden="true" className="rule-gold h-px w-[42%] opacity-55" />
+        </div>
+      </div>
+
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-[3px] border border-gold/30"
+      />
+    </>
+  );
 }
 
 /**
@@ -26,17 +106,20 @@ interface EnvelopeAnimationProps {
  *
  * While closed the shell clips overflow so the portrait cannot leak out of
  * the bottom. Once the flap is opening, overflow is released so the photo
- * can rise above the envelope.
+ * can rise above the envelope. After the peek, the pocket splits on its
+ * center spine and turns open like a book, uncovering the rest of the card.
  */
 export function EnvelopeAnimation({
   reduced,
   phase,
+  bookOpen,
   cardRef,
   onPeekComplete,
 }: EnvelopeAnimationProps) {
   const variants = envelopeVariants(reduced);
   const hero = getImage(wedding.heroImageSlug);
   const allowPeekOverflow = phase === "peeking" || phase === "expanding";
+  const holdSeconds = ENVELOPE_TIMINGS.holdMs / 1000;
 
   return (
     <div
@@ -44,7 +127,14 @@ export function EnvelopeAnimation({
         allowPeekOverflow ? "overflow-visible" : "overflow-hidden"
       }`}
     >
-      <div className="envelope-lining absolute inset-0 z-0 rounded-[3px]" />
+      <motion.div
+        initial={false}
+        animate={{ opacity: bookOpen ? 0 : 1 }}
+        transition={
+          reduced ? { duration: 0 } : { duration: holdSeconds, ease: EASE_ENVELOPE }
+        }
+        className="envelope-lining absolute inset-0 z-0 rounded-[3px]"
+      />
 
       {/* Inner flap only — its own 3D context, stacked behind the photograph. */}
       <div
@@ -94,30 +184,21 @@ export function EnvelopeAnimation({
         />
       </motion.div>
 
-      {/* Front of the pocket, covering the still-tucked part of the photograph. */}
+      {/*
+       * Front of the pocket, in two leaves. Closed, they meet at the spine
+       * and cover the tucked part of the photograph. Once the peek has
+       * settled they turn open from that spine.
+       */}
       <div
-        className="envelope-pocket absolute inset-0 z-30 rounded-[3px]"
-        style={{ clipPath: "polygon(0 100%, 0 2%, 50% 16%, 100% 2%, 100% 100%)" }}
+        className="pointer-events-none absolute inset-0 z-30"
+        style={{ perspective: "1400px" }}
       >
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          className="absolute inset-0 size-full text-gold/45"
-        >
-          <path
-            d="M0 2 50 16 100 2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-
-        <div className="absolute inset-x-0 bottom-[8%] flex flex-col items-center gap-2.5">
-          <FloralOrnament variant="crest" className="w-24 text-gold/40" />
-          <span aria-hidden="true" className="rule-gold h-px w-[42%] opacity-55" />
-        </div>
+        <BookLeaf side="left" open={bookOpen} reduced={reduced}>
+          <PocketFace />
+        </BookLeaf>
+        <BookLeaf side="right" open={bookOpen} reduced={reduced}>
+          <PocketFace />
+        </BookLeaf>
       </div>
 
       {/* Outer flap — its own 3D context, stacked above the photograph while closed. */}
@@ -146,11 +227,6 @@ export function EnvelopeAnimation({
           </svg>
         </motion.div>
       </div>
-
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-[38] rounded-[3px] border border-gold/30"
-      />
 
       <motion.div
         variants={variants.seal}

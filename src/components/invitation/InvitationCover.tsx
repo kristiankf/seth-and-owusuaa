@@ -48,6 +48,7 @@ function readRect(element: Element | null): FlightRect | null {
  */
 export function InvitationCover({ children }: InvitationCoverProps) {
   const [phase, setPhase] = useState<InvitationPhase>("closed");
+  const [bookOpen, setBookOpen] = useState(false);
   const [flight, setFlight] = useState<Flight | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -183,6 +184,7 @@ export function InvitationCover({ children }: InvitationCoverProps) {
     if (phaseRef.current !== "peeking") return;
     if (holdTimer.current !== null) return;
 
+    setBookOpen(true);
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
       startExpand();
@@ -252,6 +254,7 @@ export function InvitationCover({ children }: InvitationCoverProps) {
                 <EnvelopeAnimation
                   reduced={reduced}
                   phase={phase}
+                  bookOpen={bookOpen}
                   cardRef={cardRef}
                   onPeekComplete={handlePeekComplete}
                 />
